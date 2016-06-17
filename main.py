@@ -13,30 +13,111 @@ from Phidgets.Manager import Manager
 from Phidgets.Phidget import PhidgetLogLevel
 from Phidgets.Devices.InterfaceKit import InterfaceKit
 
-def accelChangeHandler(event):
-	device = event.device
-	index = event.index
-	acceleration = event.acceleration
-
-def temperatureChangeHandler(event):
-	device = event.device
-	index = event.index
-	temperature = event.temperature
-	potential = event.potential
+import datetime
+import sqlite3
 
 
+databasepath = 'test.db'
+
+def createDB():
+
+	conn = sqlite3.connect(databasepath)
 
 
+	conn.execute('''CREATE TABLE PHIDGET_ATTACHED
+	(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	LOGTIME TIMESTAMP NOT NULL,
+	SERIALNUMBER INT NOT NULL);''')
+
+	conn.execute('''CREATE TABLE PHIDGET_DETACHED
+	(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	LOGTIME TIMESTAMP NOT NULL,
+	SERIALNUMBER INT NOT NULL);''')
+
+##########################################################################
+
+	#event.device.getDataRate(event.index)
+	#event.device.getDataRateMax(event.index)
+	#event.device.getDataRateMin(event.index)
+	#event.device.getInputCount()
+	#event.device.getOutputCount()
+	#event.getRatiometric()
+
+	#conn.execute('''CREATE TABLE INTERFACEKIT
+	#(SERIALNUMBER INTEGER PRIMARY KEY,
+	#CLASS CHAR(50),
+	#ID CHAR(50),
+	#LABEL CHAR(50),
+	#NAME CHAR(50),
+	#TYPE CHAR(50),
+	#VERSION INT,
+	#LIBVERSION CHAR(50),
+	#DATARATE);''');
+
+	conn.execute('''CREATE TABLE INTERFACEKIT_INPUTCHANGE
+	(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	LOGTIME TIMESTAMP NOT NULL,
+	SERIALNUMBER INT NOT NULL,
+	IDX INT,
+	STATE INT);''')
+
+	conn.execute('''CREATE TABLE INTERFACEKIT_OUTPUTCHANGE
+	(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	LOGTIME TIMESTAMP NOT NULL,
+	SERIALNUMBER INT NOT NULL,
+	IDX INT,
+	STATE INT);''')
+
+	conn.execute('''CREATE TABLE INTERFACEKIT_SENSORCHANGE
+	(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	LOGTIME TIMESTAMP NOT NULL,
+	SERIALNUMBER INT NOT NULL,
+	IDX INT,
+	VALUE INT);''')
+
+############################################################################
+
+	conn.commit()
+	conn.close()
+
+createDB()
 
 def managerDeviceAttached(event):
-	device = event.device
-	#print("Manager - Device %i: %s Attached!" % (device.getSerialNum(), device.getDeviceName()))
-	deviceClass = device.getDeviceClass()
+	deviceClass = event.device.getDeviceClass()
+
+	deviceID = event.device.getDeviceID()
+	deviceLabel = event.device.getDeviceLabel()
+	deviceName = event.device.getDeviceName()
+	deviceType = event.device.getDeviceType()
+	deviceVersion = event.device.getDeviceVersion()
+	deviceLibraryVersion = event.device.getLibraryVersion()
+	deviceSerialNumber = event.device.getSerialNum()
+
+	conn = sqlite3.connect(databasepath)
+	conn.execute("INSERT INTO PHIDGET_ATTACHED(LOGTIME, SERIALNUMBER) \
+			VALUES(DateTime('now'), %i)" % (deviceSerialNumber))
+	conn.commit()
+	conn.close()
 
 	if deviceClass == 2:
 		#attach accelerometer
 		#ACCELEROMETER = 2        - Phidgets.Accelerometer
 		print("Attach Accelerometer")
+
+		def accelChangeHandler(event):
+			conn = sqlite3.connect(databasepath)
+			conn.execute("INSERT INTO ACCELEROMETER_CHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION) \
+					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.acceleration))
+			conn.commit()
+			conn.close()
+		try:
+			p = Accelerometer()
+			p.setOnAccelerationChangeHandler(accelChangeHandler)
+			p.openPhidget(deviceSerialNumber)
+		except PhidgetException as e:
+			print("Phidget Exception %i: %s" % (e.code, e.details))
+			print("Exiting...")
+			exit(1)
 	elif deviceClass == 3:
 		#attach advancedservo
 		#ADVANCEDSERVO = 3        - Phidgets.AdvanceServo
@@ -64,30 +145,45 @@ def managerDeviceAttached(event):
 	elif deviceClass == 7:
 		#attach interface kit
 		#INTERFACEKIT = 7         - Phidgets.InterfaceKit 
+		
 		print("Attach InterfaceKit")
 
 		def inputChangeHandler(event):
-			device = event.device
-			index = event.index
-			state = event.state
-			print("IK - Index %i: State %i Input Change Handler!" % (index, state))
-		def outputChangeHandler(event):
-			device = event.device
-			index = event.index
-			state = event.state
-			print("IK - Index %i: State %i Output Change Handler!" % (index, state))
+			conn = sqlite3.connect(databasepath)
+			conn.execute("INSERT INTO INTERFACEKIT_INPUTCHANGE(LOGTIME, SERIALNUMBER, IDX, STATE) \
+					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.state))
 
+			#event.device.getDataRate(event.index)
+			#event.device.getDataRateMax(event.index)
+			#event.device.getDataRateMin(event.index)
+			#event.device.getInputCount()
+			#event.device.getOutputCount()
+			#event.getRatiometric()
+
+			#conn.execute("INSERT OR REPLACE INTERFACEKIT(SERIALNUMBER, CLASS, ID, LABEL, NAME, TYPE, VERSION, LIBVERSION) \
+			#		VALUES(%s, %s, %s, %s, %s, %i, %s)" % 
+			#		(deviceSerialNumber, deviceID, deviceLabel, deviceName, deviceType, deviceVersion, deviceLibraryVersion))
+
+			conn.commit()
+			conn.close()
+		def outputChangeHandler(event):
+			conn = sqlite3.connect(databasepath)
+			conn.execute("INSERT INTO INTERFACEKIT_OUTPUTCHANGE(LOGTIME, SERIALNUMBER, IDX, STATE) \
+					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.state))
+			conn.commit()
+			conn.close()
 		def sensorChangeHandler(event):
-			device = event.device
-			index = event.index
-			value = event.value
-			print("IK - Index %i: Value %i Sensor Change Handler!" % (index, value))
+			conn = sqlite3.connect(databasepath)
+			conn.execute("INSERT INTO INTERFACEKIT_SENSORCHANGE(LOGTIME, SERIALNUMBER, IDX, VALUE) \
+					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.value))
+			conn.commit()
+			conn.close()
 		try:
 			ik = InterfaceKit()
 			ik.setOnInputChangeHandler(inputChangeHandler)
 			ik.setOnOutputChangeHandler(outputChangeHandler)
 			ik.setOnSensorChangeHandler(sensorChangeHandler)
-			ik.openPhidget(device.getSerialNum())
+			ik.openPhidget(deviceSerialNumber)
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
@@ -133,6 +229,25 @@ def managerDeviceAttached(event):
 		#attach temperature sensor
 		#TEMPERATURESENSOR = 14   - Phidgets.TemperatureSensor
 		print("Attach TemperatureSensor")
+
+		def temperatureChangeHandler(event):
+			conn = sqlite3.connect(databasepath)
+			index = event.index
+			temperature = event.temperature
+			potential = event.potential
+			
+			conn.execute("INSERT INTO TEMPERATURE_CHANGE(LOGTIME, SERIALNUMBER, IDX, TEMPERATURE, POTENTIAL) \
+					VALUES(DateTime('now'), %i, %i, %f, %f)" % (deviceSerialNumber, event.index, event.temperature, event.potential))
+			conn.commit()
+			conn.close()
+		try:
+			p = TemperatureSensor()
+			p.setOnTemperatureChangeHandler(temperatureChangeHandler)
+			p.openPhidget(deviceSerialNumber)
+		except PhidgetException as e:
+			print("Phidget Exception %i: %s" % (e.code, e.details))
+			print("Exiting...")
+			exit(1)
 	elif deviceClass == 15:
 		#attach textlcd
 		#TEXTLCD = 15             - Phidgets.TextLCD
@@ -149,8 +264,11 @@ def managerDeviceAttached(event):
 	
 
 def managerDeviceDetached(event):
-	device = e.device
-	print("Manager - Device %i: %s Detached!" % (device.getSerialNum(), device.getDeviceName()))
+	conn = sqlite3.connect(databasepath)
+	conn.execute("INSERT INTO PHIDGET_DETACHED(LOGTIME, SERIALNUMBER) \
+			VALUES(DateTime('now'), %i)" % (event.device.getSerialNum()))
+	conn.commit()
+	conn.close()
 
 def managerErrorHandler(event):
 	device = event.device
