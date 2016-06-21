@@ -7,17 +7,20 @@ from ctypes import *
 import sys
 #Phidget specific imports
 from Phidgets.PhidgetException import PhidgetErrorCodes, PhidgetException
-from Phidgets.Events.Events import AttachEventArgs, DetachEventArgs, ErrorEventArgs
+from Phidgets.Events.Events import SpatialDataEventArgs, AttachEventArgs, DetachEventArgs, ErrorEventArgs, TemperatureChangeEventArgs
+from Phidgets.Devices.Spatial import Spatial, SpatialEventData, TimeSpan
 from Phidgets.Phidget import Phidget
 from Phidgets.Manager import Manager
 from Phidgets.Phidget import PhidgetLogLevel
 from Phidgets.Devices.InterfaceKit import InterfaceKit
+from Phidgets.Devices.TemperatureSensor import TemperatureSensor, ThermocoupleType
 
 import datetime
 import sqlite3
 
 
 databasepath = 'test.db'
+loggingpath = 'phidgetlog.log'
 
 def createDB():
 
@@ -85,6 +88,8 @@ createDB()
 def managerDeviceAttached(event):
 	deviceClass = event.device.getDeviceClass()
 
+	event.device.enableLogging(PhidgetLogLevel.PHIDGET_LOG_VERBOSE, loggingpath)
+
 	deviceID = event.device.getDeviceID()
 	deviceLabel = event.device.getDeviceLabel()
 	deviceName = event.device.getDeviceName()
@@ -95,7 +100,7 @@ def managerDeviceAttached(event):
 
 	conn = sqlite3.connect(databasepath)
 	conn.execute("INSERT INTO PHIDGET_ATTACHED(LOGTIME, SERIALNUMBER) \
-			VALUES(DateTime('now'), %i)" % (deviceSerialNumber))
+			VALUES(DateTime('now'), %i)" % (event.device.getSerialNum()))
 	conn.commit()
 	conn.close()
 
@@ -107,13 +112,13 @@ def managerDeviceAttached(event):
 		def accelChangeHandler(event):
 			conn = sqlite3.connect(databasepath)
 			conn.execute("INSERT INTO ACCELEROMETER_CHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION) \
-					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.acceleration))
+					VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.acceleration))
 			conn.commit()
 			conn.close()
 		try:
 			p = Accelerometer()
 			p.setOnAccelerationChangeHandler(accelChangeHandler)
-			p.openPhidget(deviceSerialNumber)
+			p.openPhidget(event.device.getSerialNum())
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
@@ -151,7 +156,7 @@ def managerDeviceAttached(event):
 		def inputChangeHandler(event):
 			conn = sqlite3.connect(databasepath)
 			conn.execute("INSERT INTO INTERFACEKIT_INPUTCHANGE(LOGTIME, SERIALNUMBER, IDX, STATE) \
-					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.state))
+					VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.state))
 
 			#event.device.getDataRate(event.index)
 			#event.device.getDataRateMax(event.index)
@@ -162,20 +167,20 @@ def managerDeviceAttached(event):
 
 			#conn.execute("INSERT OR REPLACE INTERFACEKIT(SERIALNUMBER, CLASS, ID, LABEL, NAME, TYPE, VERSION, LIBVERSION) \
 			#		VALUES(%s, %s, %s, %s, %s, %i, %s)" % 
-			#		(deviceSerialNumber, deviceID, deviceLabel, deviceName, deviceType, deviceVersion, deviceLibraryVersion))
+			#		(event.device.getSerialNum(), deviceID, deviceLabel, deviceName, deviceType, deviceVersion, deviceLibraryVersion))
 
 			conn.commit()
 			conn.close()
 		def outputChangeHandler(event):
 			conn = sqlite3.connect(databasepath)
 			conn.execute("INSERT INTO INTERFACEKIT_OUTPUTCHANGE(LOGTIME, SERIALNUMBER, IDX, STATE) \
-					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.state))
+					VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.state))
 			conn.commit()
 			conn.close()
 		def sensorChangeHandler(event):
 			conn = sqlite3.connect(databasepath)
 			conn.execute("INSERT INTO INTERFACEKIT_SENSORCHANGE(LOGTIME, SERIALNUMBER, IDX, VALUE) \
-					VALUES(DateTime('now'), %i, %i, %i)" % (deviceSerialNumber, event.index, event.value))
+					VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.value))
 			conn.commit()
 			conn.close()
 		try:
@@ -183,7 +188,7 @@ def managerDeviceAttached(event):
 			ik.setOnInputChangeHandler(inputChangeHandler)
 			ik.setOnOutputChangeHandler(outputChangeHandler)
 			ik.setOnSensorChangeHandler(sensorChangeHandler)
-			ik.openPhidget(deviceSerialNumber)
+			ik.openPhidget(event.device.getSerialNum())
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
@@ -220,7 +225,97 @@ def managerDeviceAttached(event):
 	elif deviceClass == 20:
 		#attach spatial
 		#SPATIAL = 20             - Phidgets.Spatial
-		print("Attach Spatial")
+		print("Attach Spatial " + str(event.device.getSerialNum()))
+
+
+		def onAttachHandler(event):
+			print("Spatial Attached")
+
+		def onDetachHandler(event):
+			print("Spatial Detached")
+			event.device.closePhidget()
+
+		def onErrorHandler(event):
+			print("Spatial Error: " + event.description)
+
+		def onServerConnectHandler(event):
+			print("Spatial Server Connect")
+
+		def onServerDisconnectHandler(event):
+			print("Spatial Server Disconnect")
+
+
+		def spatialDataHandler(event):
+			print("Spatial changed")
+			for spatialData in enumerate(event.spatialData):
+				print(spatialData[1].Acceleration)
+				print(spatialData[1].AngularRate)
+				print(spatialData[1].MagneticField)
+				print(spatialData[1].Timestamp.seconds)
+
+			#print(event.device.getAccelerationAxisCount())
+			#print(event.device.getCompassAxisCount())
+			#print(event.device.getGyroAxisCount())
+
+			acceleration = []
+			#for i in range(0, event.device.getAccelerationAxisCount()):
+				#acceleration.append(event.device.getAcceleration(i))
+
+			#compass = []
+			#for i in range(0, event.device.getCompassAxisCount()):
+				#compass.append(event.device.getMagneticField(i))
+			
+			#gyro = []
+			#for i in range(0, event.device.getGyroAxisCount()):
+				#gyro.append(event.device.getAngularRate(i))
+
+			#print(len(event.spatialData))
+			#print(event.spatialData[0].acceleration)
+			#print(event.spatialData[0])
+			#print(event.spatialData[0])
+
+
+			#print(compass)
+			#print(acceleration)
+			#print(gyro)
+			#print("------------------------------------------")
+
+			#source = event.device
+			##DisplayDeviceInfo(event.device)
+			#print("Spatial %i: Amount of data %i" % (source.getSerialNum(), len(event.spatialData)))
+			#for spatialData in event.spatialData:
+				#print(len(spatialData.Acceleration))
+				#print(len(spatialData.AngularRate))
+				#print(len(spatialData.MagneticField))
+				#print(len(spatialData.TimeStamp))
+			#for index, spatialData in enumerate(event.spatialData):
+				#print("=== Data Set: %i ===" % (index))
+				#if len(spatialData.Acceleration) > 0:
+					#print("Acceleration> x: %6f  y: %6f  z: %6f" % (spatialData.Acceleration[0], spatialData.Acceleration[1], spatialData.Acceleration[2]))
+				#if len(spatialData.AngularRate) > 0:
+					#print("Angular Rate> x: %6f  y: %6f  z: %6f" % (spatialData.AngularRate[0], spatialData.AngularRate[1], spatialData.AngularRate[2]))
+				#if len(spatialData.MagneticField) > 0:
+					#print("Magnetic Field> x: %6f  y: %6f  z: %6f" % (spatialData.MagneticField[0], spatialData.MagneticField[1], spatialData.MagneticField[2]))
+				#print("Time Span> Seconds Elapsed: %i  microseconds since last packet: %i" % (spatialData.Timestamp.seconds, spatialData.Timestamp.microSeconds))
+#
+			#print("------------------------------------------")
+
+		try:
+			p = Spatial()
+
+			p.setOnAttachHandler(onAttachHandler)
+			p.setOnDetachHandler(onDetachHandler)
+			p.setOnErrorhandler(onErrorHandler)
+			p.setOnServerConnectHandler(onServerConnectHandler)
+			p.setOnServerDisconnectHandler(onServerDisconnectHandler)
+
+			p.setOnSpatialDataHandler(spatialDataHandler)
+			p.openPhidget(event.device.getSerialNum())
+		except PhidgetException as e:
+			print("Phidget Exception %i: %s" % (e.code, e.details))
+			print("Exiting...")
+			exit(1)
+
 	elif deviceClass == 13:
 		#attach stepper
 		#STEPPER = 13             - Phidgets.Stepper
@@ -228,22 +323,53 @@ def managerDeviceAttached(event):
 	elif deviceClass == 14:
 		#attach temperature sensor
 		#TEMPERATURESENSOR = 14   - Phidgets.TemperatureSensor
-		print("Attach TemperatureSensor")
+		print("Attach TemperatureSensor " + str(event.device.getSerialNum()))
+
+		def onAttachHandler(event):
+			print("Temperature Attached")
+
+		def onDetachHandler(event):
+			print("Temperature Detached")
+
+		def onErrorHandler(event):
+			print("Temperature Error: " + event.description)
+
+		def onServerConnectHandler(event):
+			print("Temperature Server Connect")
+
+		def onServerDisconnectHandler(event):
+			print("Temperature Server Disconnect")
 
 		def temperatureChangeHandler(event):
-			conn = sqlite3.connect(databasepath)
-			index = event.index
-			temperature = event.temperature
-			potential = event.potential
-			
-			conn.execute("INSERT INTO TEMPERATURE_CHANGE(LOGTIME, SERIALNUMBER, IDX, TEMPERATURE, POTENTIAL) \
-					VALUES(DateTime('now'), %i, %i, %f, %f)" % (deviceSerialNumber, event.index, event.temperature, event.potential))
-			conn.commit()
-			conn.close()
+			print("Temperature change")
+
+			#conn = sqlite3.connect(databasepath)
+			#index = event.index
+			#temperature = event.temperature
+			#potential = event.potential
+			#
+			#conn.execute("INSERT INTO TEMPERATURE_CHANGE(LOGTIME, SERIALNUMBER, IDX, TEMPERATURE, POTENTIAL) \
+					#VALUES(DateTime('now'), %i, %i, %f, %f)" % (event.device.getSerialNum(), event.index, event.temperature, event.potential))
+			#conn.commit()
+			#conn.close()
+
 		try:
 			p = TemperatureSensor()
+			p.setOnAttachHandler(onAttachHandler)
+			p.setOnDetachHandler(onDetachHandler)
+			p.setOnErrorhandler(onErrorHandler)
+			p.setOnServerConnectHandler(onServerConnectHandler)
+			p.setOnServerDisconnectHandler(onServerDisconnectHandler)
+
 			p.setOnTemperatureChangeHandler(temperatureChangeHandler)
-			p.openPhidget(deviceSerialNumber)
+			p.openPhidget(event.device.getSerialNum())
+
+
+			#p.waitForAttach(10000)
+
+			#p.setThermocoupleType(0, ThermocoupleType.PHIDGET_TEMPERATURE_SENSOR_K_TYPE)
+			#p.setTemperatureChangeTrigger(0, 0.10)
+
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
