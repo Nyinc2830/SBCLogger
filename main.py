@@ -22,6 +22,13 @@ import sqlite3
 databasepath = 'test.db'
 loggingpath = 'phidgetlog.log'
 
+def displayDeviceInfo(device):
+	print("|------------|----------------------------------|--------------|------------|")
+	print("|- Attached -|-              Type              -|- Serial No. -|-  Version -|")
+	print("|------------|----------------------------------|--------------|------------|")
+	print("|- %8s -|- %30s -|- %10d -|- %8d -|" % (device.isAttached(), device.getDeviceName(), device.getSerialNum(), device.getDeviceVersion()))
+	print("|------------|----------------------------------|--------------|------------|")
+			
 def createDB():
 
 	conn = sqlite3.connect(databasepath)
@@ -79,6 +86,23 @@ def createDB():
 	VALUE INT);''')
 
 ############################################################################
+
+	conn.execute('''CREATE TABLE SPATIAL_DATACHANGE
+	(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	LOGTIME TIMESTAMP NOT NULL,
+	SERIALNUMBER INT NOT NULL,
+	IDX INT,
+	ACCELERATION_X REAL,
+	ACCELERATION_Y REAL,
+	ACCELERATION_Z REAL,
+	ANGULARRATE_X REAL,
+	ANGULARRATE_Y REAL,
+	ANGULARRATE_Z REAL,
+	MAGNETICFIELD_X REAL,
+	MAGNETICFIELD_Y REAL,
+	MAGNETICFIELD_Z REAL);''')
+
+##########################################################################
 
 	conn.commit()
 	conn.close()
@@ -229,76 +253,73 @@ def managerDeviceAttached(event):
 
 
 		def onAttachHandler(event):
-			print("Spatial Attached")
+			logString = "Spatial Attached " + str(event.device.getSerialNum())
+			print(logString)
+			displayDeviceInfo(event.device)
 
 		def onDetachHandler(event):
-			print("Spatial Detached")
+			logString = "Spatial Detached " + str(event.device.getSerialNum())
+			print(logString)
+
 			event.device.closePhidget()
 
 		def onErrorHandler(event):
-			print("Spatial Error: " + event.description)
+			logString = "Spatial Error " + str(event.device.getSerialNum()) + ", Error: " + event.description
+			print(logString)
 
 		def onServerConnectHandler(event):
-			print("Spatial Server Connect")
+			logString = "Spatial Server Connect " + str(event.device.getSerialNum())
+			print(logString)
 
 		def onServerDisconnectHandler(event):
-			print("Spatial Server Disconnect")
-
+			logString = "Spatial Server Disconnect " + str(event.device.getSerialNum())
+			print(logString)
 
 		def spatialDataHandler(event):
-			print("Spatial changed")
+			logString = "Spatial Changed " + str(event.device.getSerialNum())
+			print(logString)
+
+			conn = sqlite3.connect(databasepath)
+				
+			index = 0
 			for spatialData in enumerate(event.spatialData):
-				print(spatialData[1].Acceleration)
-				print(spatialData[1].AngularRate)
-				print(spatialData[1].MagneticField)
-				print(spatialData[1].Timestamp.seconds)
+				accelX = 0
+				accelY = 0
+				accelZ = 0
+				if len(spatialData[1].Acceleration) > 0:
+					accelX = spatialData[1].Acceleration[0]
+					accelY = spatialData[1].Acceleration[1]
+					if len(spatialData[1].Acceleration) > 2:
+						accelZ = spatialData[1].Acceleration[2]
 
-			#print(event.device.getAccelerationAxisCount())
-			#print(event.device.getCompassAxisCount())
-			#print(event.device.getGyroAxisCount())
+				angularX = 0
+				angularY = 0
+				angularZ = 0
+				if len(spatialData[1].AngularRate) > 0:
+					angularX = spatialData[1].AngularRate[0]
+					angularY = spatialData[1].AngularRate[1]
+					if len(spatialData[1].AngularRate) > 2:
+						angularZ = spatialData[1].AngularRate[2]
 
-			acceleration = []
-			#for i in range(0, event.device.getAccelerationAxisCount()):
-				#acceleration.append(event.device.getAcceleration(i))
+				magneticX = 0
+				magneticY = 0
+				magneticZ = 0
+				if len(spatialData[1].AngularRate) > 0:
+					magneticX = spatialData[1].MagneticField[0]
+					magneticY = spatialData[1].MagneticField[1]
+					if len(spatialData[1].AngularRate) > 2:
+						magneticZ = spatialData[1].MagneticField[2]
 
-			#compass = []
-			#for i in range(0, event.device.getCompassAxisCount()):
-				#compass.append(event.device.getMagneticField(i))
-			
-			#gyro = []
-			#for i in range(0, event.device.getGyroAxisCount()):
-				#gyro.append(event.device.getAngularRate(i))
+				#print(index)
+				#print("Acceleration: " + str(spatialData[1].Acceleration))
+				#print("AngularRate: " + str(spatialData[1].AngularRate))
+				#print("MagneticField: " + str(spatialData[1].MagneticField))
+				#print("Seconds: " + str(spatialData[1].Timestamp.seconds))
+				conn.execute("INSERT INTO SPATIAL_DATACHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION_X, ACCELERATION_Y, ACCELERATION_Z, ANGULARRATE_X, ANGULARRATE_Y, ANGULARRATE_Z, MAGNETICFIELD_X, MAGNETICFIELD_Y, MAGNETICFIELD_X) VALUES(DateTime('now'), %i, %i, %f, %f, %f, %f, %f, %f, %f, %f, %f)" % (event.device.getSerialNum(), index, accelX, accelY, accelZ, angularX, angularY, angularZ, magneticX, magneticY, magneticZ))
+				index += 1
 
-			#print(len(event.spatialData))
-			#print(event.spatialData[0].acceleration)
-			#print(event.spatialData[0])
-			#print(event.spatialData[0])
-
-
-			#print(compass)
-			#print(acceleration)
-			#print(gyro)
-			#print("------------------------------------------")
-
-			#source = event.device
-			##DisplayDeviceInfo(event.device)
-			#print("Spatial %i: Amount of data %i" % (source.getSerialNum(), len(event.spatialData)))
-			#for spatialData in event.spatialData:
-				#print(len(spatialData.Acceleration))
-				#print(len(spatialData.AngularRate))
-				#print(len(spatialData.MagneticField))
-				#print(len(spatialData.TimeStamp))
-			#for index, spatialData in enumerate(event.spatialData):
-				#print("=== Data Set: %i ===" % (index))
-				#if len(spatialData.Acceleration) > 0:
-					#print("Acceleration> x: %6f  y: %6f  z: %6f" % (spatialData.Acceleration[0], spatialData.Acceleration[1], spatialData.Acceleration[2]))
-				#if len(spatialData.AngularRate) > 0:
-					#print("Angular Rate> x: %6f  y: %6f  z: %6f" % (spatialData.AngularRate[0], spatialData.AngularRate[1], spatialData.AngularRate[2]))
-				#if len(spatialData.MagneticField) > 0:
-					#print("Magnetic Field> x: %6f  y: %6f  z: %6f" % (spatialData.MagneticField[0], spatialData.MagneticField[1], spatialData.MagneticField[2]))
-				#print("Time Span> Seconds Elapsed: %i  microseconds since last packet: %i" % (spatialData.Timestamp.seconds, spatialData.Timestamp.microSeconds))
-#
-			#print("------------------------------------------")
+			conn.commit()
+			conn.close()
 
 		try:
 			p = Spatial()
