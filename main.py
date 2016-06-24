@@ -22,13 +22,27 @@ import sqlite3
 databasepath = 'test.db'
 loggingpath = 'phidgetlog.log'
 
-def displayDeviceInfo(device):
+def displayAttachedDeviceInfo(device):
 	print("|------------|----------------------------------|--------------|------------|")
 	print("|- Attached -|-              Type              -|- Serial No. -|-  Version -|")
 	print("|------------|----------------------------------|--------------|------------|")
 	print("|- %8s -|- %30s -|- %10d -|- %8d -|" % (device.isAttached(), device.getDeviceName(), device.getSerialNum(), device.getDeviceVersion()))
 	print("|------------|----------------------------------|--------------|------------|")
 			
+def displayDetachedDeviceInfo(device):
+	print("|------------|----------------------------------|--------------|------------|")
+	print("|- Detached -|-              Type              -|- Serial No. -|-  Version -|")
+	print("|------------|----------------------------------|--------------|------------|")
+	print("|- %8s -|- %30s -|- %10d -|- %8d -|" % (device.isAttached(), device.getDeviceName(), device.getSerialNum(), device.getDeviceVersion()))
+	print("|------------|----------------------------------|--------------|------------|")
+
+def displayErrorDeviceInfo(device):
+	try:
+		source = event.device
+		print("GPS %i: Phidget Error %i: %s" % (source.getSerialNum(), e.eCode, e.description))
+	except PhidgetException as e:
+		print("Phidget Exception %i: %s" % (e.code, e.details))
+
 def createDB():
 
 	conn = sqlite3.connect(databasepath)
@@ -132,21 +146,6 @@ def managerDeviceAttached(event):
 		#attach accelerometer
 		#ACCELEROMETER = 2        - Phidgets.Accelerometer
 		print("Attach Accelerometer")
-
-		def accelChangeHandler(event):
-			conn = sqlite3.connect(databasepath)
-			conn.execute("INSERT INTO ACCELEROMETER_CHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION) \
-					VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.acceleration))
-			conn.commit()
-			conn.close()
-		try:
-			p = Accelerometer()
-			p.setOnAccelerationChangeHandler(accelChangeHandler)
-			p.openPhidget(event.device.getSerialNum())
-		except PhidgetException as e:
-			print("Phidget Exception %i: %s" % (e.code, e.details))
-			print("Exiting...")
-			exit(1)
 	elif deviceClass == 3:
 		#attach advancedservo
 		#ADVANCEDSERVO = 3        - Phidgets.AdvanceServo
@@ -255,18 +254,20 @@ def managerDeviceAttached(event):
 		def onAttachHandler(event):
 			logString = "Spatial Attached " + str(event.device.getSerialNum())
 			print(logString)
-			displayDeviceInfo(event.device)
+			displayAttachedDeviceInfo(event.device)
 
 		def onDetachHandler(event):
 			logString = "Spatial Detached " + str(event.device.getSerialNum())
 			print(logString)
+			displayDetachedDeviceInfo(event.device)
 
 			event.device.closePhidget()
 
 		def onErrorHandler(event):
 			logString = "Spatial Error " + str(event.device.getSerialNum()) + ", Error: " + event.description
 			print(logString)
-
+			displayErrorDeviceInfo(event.device)
+			
 		def onServerConnectHandler(event):
 			logString = "Spatial Server Connect " + str(event.device.getSerialNum())
 			print(logString)
