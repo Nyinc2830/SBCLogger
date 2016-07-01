@@ -1,3 +1,0 @@
-rm test.db
-python main.py
-
