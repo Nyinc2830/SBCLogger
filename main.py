@@ -5,6 +5,7 @@ __date__ = 'June 15 2016'
 #Basic imports
 from ctypes import *
 import sys
+
 #Phidget specific imports
 from Phidgets.PhidgetException import PhidgetErrorCodes, PhidgetException
 from Phidgets.Events.Events import SpatialDataEventArgs, AttachEventArgs, DetachEventArgs, ErrorEventArgs, TemperatureChangeEventArgs
@@ -18,6 +19,7 @@ import sqlite3
 from InterfaceKit import AttachInterfaceKit
 from Spatial import AttachSpatial
 from Temperature import AttachTemperature
+from Accelerometer import AttachAccelerometer
 
 databasepath = '/usr/data/test.db'
 loggingpath = 'phidgetlog.log'
@@ -117,7 +119,7 @@ def managerDeviceAttached(event):
 		print "An error occurred:", e.args[0]
 
 
-	if   deviceClass ==  2:print("Attach Accelerometer")
+	if   deviceClass ==  2:AttachAccelerometer(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  3:print("Attach AdvanceServo")
 	elif deviceClass == 22:print("Attach Analog")
 	elif deviceClass == 23:print("Attach Bridge")
