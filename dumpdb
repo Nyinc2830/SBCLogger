@@ -1,0 +1,3 @@
+sqlite3 /usr/data/test.db .schema > schema.sql
+sqlite3 /usr/data/test.db .dump > dump.sql
+grep -v -f schema.sql dump > data.sql

@@ -99,6 +99,14 @@ def createDB():
 
 ##########################################################################
 
+		conn.execute('''CREATE TABLE IF NOT EXISTS ACCELEROMETER_CHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME TIMESTAMP NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		ACCELERATION REAL);''')
+
+##########################################################################
 		conn.commit()
 		conn.close()
 	except sqlite3.Error as e:

@@ -40,14 +40,14 @@ def AttachAccelerometer(databasepath, serialNumber):
 		logString = "Accelerometer Changed " + str(event.device.getSerialNum())
 		#print(logString)
 
-		#sqliteStatement = "INSERT INTO TEMPERATURE_CHANGE(LOGTIME, SERIALNUMBER, IDX, TEMPERATURE, POTENTIAL) VALUES(DateTime('now'), %i, %i, %f, %f)" % (event.device.getSerialNum(), event.index, event.temperature, event.potential)
-		#try:
-			#conn = sqlite3.connect(databasepath)
-			#conn.execute(sqliteStatement)
-			#conn.commit()
-			#conn.close()
-		#except sqlite3.Error as e:
-			#print "An error occurred:", e.args[0]
+		sqliteStatement = "INSERT INTO ACCELEROMETER_CHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION) VALUES(DateTime('now'), %i, %i, %f)" % (event.device.getSerialNum(), event.index, event.acceleration)
+		try:
+			conn = sqlite3.connect(databasepath)
+			conn.execute(sqliteStatement)
+			conn.commit()
+			conn.close()
+		except sqlite3.Error as e:
+			print "An error occurred:", e.args[0]
 	try:
 		p = Accelerometer()
 
