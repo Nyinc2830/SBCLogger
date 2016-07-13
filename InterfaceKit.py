@@ -9,20 +9,17 @@ def AttachInterfaceKit(databasepath, serialNumber):
 	
        def inputChangeHandler(event):
 	       conn = sqlite3.connect(databasepath)
-	       conn.execute("INSERT INTO INTERFACEKIT_INPUTCHANGE(LOGTIME, SERIALNUMBER, IDX, STATE) \
-			       VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.state))
+	       conn.execute("INSERT INTO INTERFACEKIT_INPUTCHANGE VALUES(NULL, DateTime('now'), ?, ?, ?)", (event.device.getSerialNum(), event.index, event.state))
 	       conn.commit()
 	       conn.close()
        def outputChangeHandler(event):
 	       conn = sqlite3.connect(databasepath)
-	       conn.execute("INSERT INTO INTERFACEKIT_OUTPUTCHANGE(LOGTIME, SERIALNUMBER, IDX, STATE) \
-			       VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.state))
+	       conn.execute("INSERT INTO INTERFACEKIT_OUTPUTCHANGE VALUES(NULL, DateTime('now'), ?, ?, ?)", (event.device.getSerialNum(), event.index, event.state))
 	       conn.commit()
 	       conn.close()
        def sensorChangeHandler(event):
 	       conn = sqlite3.connect(databasepath)
-	       conn.execute("INSERT INTO INTERFACEKIT_SENSORCHANGE(LOGTIME, SERIALNUMBER, IDX, VALUE) \
-			       VALUES(DateTime('now'), %i, %i, %i)" % (event.device.getSerialNum(), event.index, event.value))
+	       conn.execute("INSERT INTO INTERFACEKIT_SENSORCHANGE VALUES(NULL, DateTime('now'), ?, ?, ?)", (event.device.getSerialNum(), event.index, event.value))
 	       conn.commit()
 	       conn.close()
        try:

@@ -38,10 +38,11 @@ def AttachTemperature(databasepath, serialNumber):
 
 	def temperatureChangeHandler(event):
 		logString = "Temperature Changed " + str(event.device.getSerialNum())
-		sqliteStatement = "INSERT INTO TEMPERATURE_CHANGE(LOGTIME, SERIALNUMBER, IDX, TEMPERATURE, POTENTIAL) VALUES(DateTime('now'), %i, %i, %f, %f)" % (event.device.getSerialNum(), event.index, event.temperature, event.potential)
+
 		try:
 			conn = sqlite3.connect(databasepath)
-			conn.execute(sqliteStatement)
+			conn.execute("INSERT INTO TEMPERATURE_CHANGE VALUES(NULL, DateTime('now'), ?, ?, ?, ?)", 
+					(event.device.getSerialNum(), event.index, event.temperature, event.potential))
 			conn.commit()
 			conn.close()
 		except sqlite3.Error as e:

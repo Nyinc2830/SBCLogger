@@ -72,8 +72,9 @@ def AttachSpatial(databasepath, serialNumber):
 					if len(spatialData[1].AngularRate) > 2:
 						magneticZ = spatialData[1].MagneticField[2]
 
-				sqliteStatement = "INSERT INTO SPATIAL_DATACHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION_X, ACCELERATION_Y, ACCELERATION_Z, ANGULARRATE_X, ANGULARRATE_Y, ANGULARRATE_Z, MAGNETICFIELD_X, MAGNETICFIELD_Y, MAGNETICFIELD_X) VALUES(DateTime('now'), %i, %i, %f, %f, %f, %f, %f, %f, %f, %f, %f)" % (event.device.getSerialNum(), index, accelX, accelY, accelZ, angularX, angularY, angularZ, magneticX, magneticY, magneticZ)
-				conn.execute(sqliteStatement)
+				conn.execute("INSERT INTO SPATIAL_DATACHANGE VALUES(NULL, DateTime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+						(event.device.getSerialNum(), index, accelX, accelY, accelZ, angularX, angularY, angularZ, magneticX, magneticY, magneticZ))
+
 				index += 1
 
 			conn.commit()
