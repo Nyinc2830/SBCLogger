@@ -40,7 +40,7 @@ def AttachAccelerometer(databasepath, serialNumber):
 		logString = "Accelerometer Changed " + str(event.device.getSerialNum())
 		#print(logString)
 
-		sqliteStatement = "INSERT INTO ACCELEROMETER_CHANGE(LOGTIME, SERIALNUMBER, IDX, ACCELERATION) VALUES(DateTime('now'), %i, %i, %f)" % (event.device.getSerialNum(), event.index, event.acceleration)
+		sqliteStatement = "INSERT INTO ACCELEROMETER_CHANGE VALUES(NULL, DateTime('now'), %i, %i, %f)" % (event.device.getSerialNum(), event.index, event.acceleration)
 		try:
 			conn = sqlite3.connect(databasepath)
 			conn.execute(sqliteStatement)
