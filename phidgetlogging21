@@ -25,10 +25,16 @@ from Accelerometer import AttachAccelerometer
 import sys, time
 from daemon import Daemon
 import os
+import logging
+
+from pydaemon import Daemon
 
 #databasepath = '/usr/data/test.db'
 databasepath = '/usr/data/phidgetdata.db'
 loggingpath = '/usr/data/phidgetdata.log'
+
+pidpath = "/var/run/phidgetlogging.pid"
+pidloggingpath = "/usr/data/phidgetdaemondata.log"
 
 #someVariable = (os.environ['PATH'])
 #print("someVariable " + someVariable)
@@ -190,7 +196,7 @@ def managerServerDisconnect(event):
 	print("Manager - Device %i: %s Disconnected!" % (device.getSerialNum(), device.getDeviceName()))
 
 
-def main():
+def my_main():
 	createDB()
 
 	try:
@@ -232,63 +238,109 @@ def main():
 	print("Done.")
 	exit(0)
 
-
-if __name__ == "__main__":
-	main()
-
-class MyDaemon(Daemon):
+class PhidgetDaemon(Daemon):
 	def run(self):
+		logging.debug("I'm starting...")
 		createDB()
 
 		try:
-			manager = Manager()
+			self.manager = Manager()
 		except RuntimeError as e:
 			print("RuntimeException: %s" % e.details)
 			print("Exiting...")
 			exit(1)
 
 		try:
-			manager.setOnAttachHandler(managerDeviceAttached)
-			manager.setOnDetachHandler(managerDeviceDetached)
-			manager.setOnErrorHandler(managerErrorHandler)
-			manager.setOnServerConnectHandler(managerServerConnect)
-			manager.setOnServerDisconnectHandler(managerServerDisconnect)
-			manager.openManager()
+			self.manager.setOnAttachHandler(managerDeviceAttached)
+			self.manager.setOnDetachHandler(managerDeviceDetached)
+			self.manager.setOnErrorHandler(managerErrorHandler)
+			self.manager.setOnServerConnectHandler(managerServerConnect)
+			self.manager.setOnServerDisconnectHandler(managerServerDisconnect)
+			self.manager.openManager()
 
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
 			exit(1)
 		try:
-			manager.openManager()
+			self.manager.openManager()
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
 			exit(1)
-
 		while True:
+			logging.debug("I'm here...")
 			time.sleep(1)
 
+	def cleanup(self):
+		logging.debug("I'm finishing...")
 		try:
-			manager.closeManager()
+			self.manager.closeManager()
 		except PhidgetException as e:
 			print("Phidget Exception %i: %s" % (e.code, e.details))
 			print("Exiting...")
 			exit(1)
 
+if __name__ == "__main__":
+	logging.basicConfig(filename="phidgetdaemondata.log", level=logging.DEBUG)
+	daemon = PhidgetDaemon(pidpath, "PhidgetDaemon")
+	#daemon.main(extended_args={"bar":daemon.bar})
+	daemon.main()
+
+#class MyDaemon(Daemon):
+#	def cleanup(self):
+#		try:
+#			manager.closeManager()
+#		except PhidgetException as e:
+#			print("Phidget Exception %i: %s" % (e.code, e.details))
+#			print("Exiting...")
+#			exit(1)
+#
+#	def run(self):
+#		createDB()
+#
+#		try:
+#			manager = Manager()
+#		except RuntimeError as e:
+#			print("RuntimeException: %s" % e.details)
+#			print("Exiting...")
+#			exit(1)
+#
+#		try:
+#			manager.setOnAttachHandler(managerDeviceAttached)
+#			manager.setOnDetachHandler(managerDeviceDetached)
+#			manager.setOnErrorHandler(managerErrorHandler)
+#			manager.setOnServerConnectHandler(managerServerConnect)
+#			manager.setOnServerDisconnectHandler(managerServerDisconnect)
+#			manager.openManager()
+#
+#		except PhidgetException as e:
+#			print("Phidget Exception %i: %s" % (e.code, e.details))
+#			print("Exiting...")
+#			exit(1)
+#		try:
+#			manager.openManager()
+#		except PhidgetException as e:
+#			print("Phidget Exception %i: %s" % (e.code, e.details))
+#			print("Exiting...")
+#			exit(1)
+#
+#		while True:
+#			time.sleep(1)
+#
 #if __name__ == "__main__":
-	#daemon = MyDaemon('/var/run/phidgetlogging.pid')
-	#if len(sys.argv) == 2:
-		#if 'start' == sys.argv[1] or 'forcestart' == sys.argv[1]:
-			#daemon.start()
-		#elif 'stop' == sys.argv[1]:
-			#daemon.stop()
-		#elif 'restart' == sys.argv[1]:
-			#daemon.restart()
-		#else:
-			#print "Unknown command"
-			#sys.exit(2)
-		#sys.exit(0)
-	#else:
-		#print "usage: %s start|stop|restart" % sys.argv[0]
-		#sys.exit(2)
+#	daemon = MyDaemon('/var/run/phidgetlogging.pid')
+#	if len(sys.argv) == 2:
+#		if 'start' == sys.argv[1] or 'forcestart' == sys.argv[1]:
+#			daemon.start()
+#		elif 'stop' == sys.argv[1]:
+#			daemon.stop()
+#		elif 'restart' == sys.argv[1]:
+#			daemon.restart()
+#		else:
+#			print "Unknown command"
+#			sys.exit(2)
+#		sys.exit(0)
+#	else:
+#		print "usage: %s start|stop|restart" % sys.argv[0]
+#		sys.exit(2)

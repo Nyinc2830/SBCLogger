@@ -114,6 +114,7 @@ class Daemon:
 			else:
 				print str(err)
 				sys.exit(1)
+		self.cleanup()
 
 	def restart(self):
 		"""
@@ -126,4 +127,10 @@ class Daemon:
 		"""
 		You should override this method when you subclass Daemon. It will be called after the process has been
 		daemonized by start() or restart().
+		"""
+
+	def cleanup(self):
+		"""
+		You should override this method when you subclass Daemon. It will be called after the process has been
+		daemonized by stop().
 		"""
