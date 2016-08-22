@@ -137,7 +137,7 @@ def createDB():
 		LOGTIME DATE NOT NULL,
 		SERIALNUMBER INT NOT NULL,
 		IDX INT,
-		STATE INTEGER);''')
+		STATE INT);''')
 
 		conn.execute('''CREATE TABLE IF NOT EXISTS STEPPER_POSITIONCHANGE
 		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -250,7 +250,7 @@ def createDB():
 		LOGTIME DATE NOT NULL,
 		SERIALNUMBER INT NOT NULL,
 		IDX INT,
-		STATE INTEGER);''')
+		STATE INT);''')
 
 		conn.execute('''CREATE TABLE IF NOT EXISTS ENCODER_POSITIONCHANGE
 		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -261,6 +261,16 @@ def createDB():
 
 ##########################################################################
 
+		conn.execute('''CREATE TABLE IF NOT EXISTS FREQUENCY_COUNT
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		TIME INT, 
+		COUNTS INT);''')
+
+##########################################################################
+#
 		conn.commit()
 		conn.close()
 	except sqlite3.Error as e:
@@ -285,7 +295,7 @@ def managerDeviceAttached(event):
 	elif deviceClass == 22:print("Attach Analog")
 	elif deviceClass == 23:AttachBridge(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  4:AttachEncoder(databasepath, event.device.getSerialNum())
-	elif deviceClass == 21:print("Attach FrequencyCounter")
+	elif deviceClass == 21:AttachFrequencyCounter(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  5:print("Attach GPS")
 	elif deviceClass ==  7:AttachInterfaceKit(databasepath, event.device.getSerialNum())
 	elif deviceClass == 19:print("Attach IR")
