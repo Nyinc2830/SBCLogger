@@ -6,7 +6,7 @@ from DeviceInfo import DisplayErrorDeviceInfo
 from Phidgets.PhidgetException import PhidgetErrorCodes, PhidgetException
 
 from Phidgets.Events.Events import GPSPositionChangeEventArgs, PositionChangeEventArgs, InputChangeEventArgs, AttachEventArgs, DetachEventArgs, ErrorEventArgs
-from Phidgets.Devices.GPS import GPS
+from Phidgets.Devices.GPS import GPS, GPSDate, GPSTime
 
 import datetime
 import sqlite3

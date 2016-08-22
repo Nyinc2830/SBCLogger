@@ -25,6 +25,13 @@ from MotorControl import AttachMotorControl
 from Bridge import AttachBridge
 from Encoder import AttachEncoder
 from GPS import AttachGPS
+from IR import AttachIR
+from PHSensor import AttachPHSensor
+from RFID import AttachRFID
+from Servo import AttachServo
+from Analog import AttachAnalog
+from LED import AttachLED
+from TextLCD import AttachTextLCD
 
 import sys, time
 from daemon import Daemon
@@ -287,7 +294,68 @@ def createDB():
 		POSITION REAL);''')
 
 ##########################################################################
-#
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS IR_CODE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		CODE REAL,
+		REPEAT REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS IR_LEARN
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		CODE REAL,
+		CODEINFO REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS IR_RAWDATA
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		RAWDATA REAL);''')
+
+##########################################################################
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS PHSENSOR_CHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		PH REAL);''')
+
+##########################################################################
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS RFID_OUTPUTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VALUE INT);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS RFID_TAG
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		TAG CHAR(512) NOT NULL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS RFID_TAGLOST
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		TAG CHAR(512) NOT NULL);''')
+
+
+##########################################################################
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS SERVO_POSITIONCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		POSITION REAL);''')
+
+##########################################################################
+
 		conn.commit()
 		conn.close()
 	except sqlite3.Error as e:
@@ -309,23 +377,23 @@ def managerDeviceAttached(event):
 
 	if   deviceClass ==  2:AttachAccelerometer(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  3:AttachAdvancedServo(databasepath, event.device.getSerialNum())
-	elif deviceClass == 22:print("Attach Analog")
+	elif deviceClass == 22:AttachAnalog(databasepath, event.device.getSerialNum())
 	elif deviceClass == 23:AttachBridge(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  4:AttachEncoder(databasepath, event.device.getSerialNum())
 	elif deviceClass == 21:AttachFrequencyCounter(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  5:AttachGPS(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  7:AttachInterfaceKit(databasepath, event.device.getSerialNum())
-	elif deviceClass == 19:print("Attach IR")
-	elif deviceClass ==  8:print("Attach LED")
+	elif deviceClass == 19:AttachIR(databasepath, event.device.getSerialNum())
+	elif deviceClass ==  8:AttachLED(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  9:AttachMotorControl(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  1:print("Attach Nothing")
-	elif deviceClass == 10:print("Attach PHSensor")
-	elif deviceClass == 11:print("Attach RFID")
-	elif deviceClass == 12:print("Attach Servo")
+	elif deviceClass == 10:AttachPHSensor(databasepath, event.device.getSerialNum())
+	elif deviceClass == 11:AttachRFID(databasepath, event.device.getSerialNum())
+	elif deviceClass == 12:AttachServo(databasepath, event.device.getSerialNum())
 	elif deviceClass == 20:AttachSpatial(databasepath, event.device.getSerialNum())
 	elif deviceClass == 13:AttachStepper(databasepath, event.device.getSerialNum())
 	elif deviceClass == 14:AttachTemperature(databasepath, event.device.getSerialNum())
-	elif deviceClass == 15:print("Attach TextLCD")
+	elif deviceClass == 15:AttachTextLCD(databasepath, event.device.getSerialNum())
 	elif deviceClass == 16:print("TEXTLED not supported")
 	elif deviceClass == 17:print("WEIGHTSENSOR not supported")
 	#TEXTLED = 16
