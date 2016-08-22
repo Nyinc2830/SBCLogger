@@ -17,6 +17,7 @@ def DisplayDetachedDeviceInfo(device):
 
 def DisplayErrorDeviceInfo(e):
 	try:
-		print("Phidget Error %i: %s" % (e.eCode, e.description))
+		#print("Phidget Error %i: %s" % (e.code, e.description))
+		print("Phidget Error")
 	except PhidgetException as e:
 		print("Phidget Exception %i: %s" % (e.code, e.details))

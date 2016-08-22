@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 __author__ = 'James Folk'
 __version__ = '0.0.1'
 __date__ = 'June 15 2016'
@@ -21,6 +19,9 @@ from InterfaceKit import AttachInterfaceKit
 from Spatial import AttachSpatial
 from Temperature import AttachTemperature
 from Accelerometer import AttachAccelerometer
+from Stepper import AttachStepper
+from AdvancedServo import AttachAdvancedServo
+from MotorControl import AttachMotorControl
 
 import sys, time
 from daemon import Daemon
@@ -122,6 +123,117 @@ def createDB():
 
 ##########################################################################
 
+		conn.execute('''CREATE TABLE IF NOT EXISTS STEPPER_CURRENTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		CURRENT REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS STEPPER_INPUTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		STATE INTEGER);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS STEPPER_POSITIONCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		POSITION REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS STEPPER_VELOCITYCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VELOCITY REAL);''')
+
+##########################################################################
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS ADVANCEDSERVO_CURRENTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		CURRENT REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS ADVANCEDSERVO_POSITIONCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		POSITION REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS ADVANCEDSERVO_VELOCITYCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VELOCITY REAL);''')
+
+##########################################################################
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_BACKEMFUPDATE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VOLTAGE REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_CURRENTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		CURRENT REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_CURRENTUPDATE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		CURRENT REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_INPUTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		STATE INT);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_POSITIONCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		POSITION REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_POSITIONUPDATE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		POSITION REAL);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_SENSORUPDATE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VALUE INT);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS MOTORCONTROL_VELOCITYCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VELOCITY REAL);''')
+
+##########################################################################
+
 		conn.commit()
 		conn.close()
 	except sqlite3.Error as e:
@@ -142,7 +254,7 @@ def managerDeviceAttached(event):
 
 
 	if   deviceClass ==  2:AttachAccelerometer(databasepath, event.device.getSerialNum())
-	elif deviceClass ==  3:print("Attach AdvanceServo")
+	elif deviceClass ==  3:AttachAdvancedServo(databasepath, event.device.getSerialNum())
 	elif deviceClass == 22:print("Attach Analog")
 	elif deviceClass == 23:print("Attach Bridge")
 	elif deviceClass ==  4:print("Attach Encoder")
@@ -151,13 +263,13 @@ def managerDeviceAttached(event):
 	elif deviceClass ==  7:AttachInterfaceKit(databasepath, event.device.getSerialNum())
 	elif deviceClass == 19:print("Attach IR")
 	elif deviceClass ==  8:print("Attach LED")
-	elif deviceClass ==  9:print("Attach MotorControl")
+	elif deviceClass ==  9:AttachMotorControl(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  1:print("Attach Nothing")
 	elif deviceClass == 10:print("Attach PHSensor")
 	elif deviceClass == 11:print("Attach RFID")
 	elif deviceClass == 12:print("Attach Servo")
 	elif deviceClass == 20:AttachSpatial(databasepath, event.device.getSerialNum())
-	elif deviceClass == 13:print("Attach Stepper")
+	elif deviceClass == 13:AttachStepper(databasepath, event.device.getSerialNum())
 	elif deviceClass == 14:AttachTemperature(databasepath, event.device.getSerialNum())
 	elif deviceClass == 15:print("Attach TextLCD")
 	elif deviceClass == 16:print("TEXTLED not supported")
@@ -197,6 +309,7 @@ def managerServerDisconnect(event):
 
 
 def my_main():
+	logging.debug("I'm starting...")
 	createDB()
 
 	try:
@@ -281,66 +394,10 @@ class PhidgetDaemon(Daemon):
 			print("Exiting...")
 			exit(1)
 
-if __name__ == "__main__":
-	logging.basicConfig(filename="phidgetdaemondata.log", level=logging.DEBUG)
-	daemon = PhidgetDaemon(pidpath, "PhidgetDaemon")
-	#daemon.main(extended_args={"bar":daemon.bar})
-	daemon.main()
-
-#class MyDaemon(Daemon):
-#	def cleanup(self):
-#		try:
-#			manager.closeManager()
-#		except PhidgetException as e:
-#			print("Phidget Exception %i: %s" % (e.code, e.details))
-#			print("Exiting...")
-#			exit(1)
-#
-#	def run(self):
-#		createDB()
-#
-#		try:
-#			manager = Manager()
-#		except RuntimeError as e:
-#			print("RuntimeException: %s" % e.details)
-#			print("Exiting...")
-#			exit(1)
-#
-#		try:
-#			manager.setOnAttachHandler(managerDeviceAttached)
-#			manager.setOnDetachHandler(managerDeviceDetached)
-#			manager.setOnErrorHandler(managerErrorHandler)
-#			manager.setOnServerConnectHandler(managerServerConnect)
-#			manager.setOnServerDisconnectHandler(managerServerDisconnect)
-#			manager.openManager()
-#
-#		except PhidgetException as e:
-#			print("Phidget Exception %i: %s" % (e.code, e.details))
-#			print("Exiting...")
-#			exit(1)
-#		try:
-#			manager.openManager()
-#		except PhidgetException as e:
-#			print("Phidget Exception %i: %s" % (e.code, e.details))
-#			print("Exiting...")
-#			exit(1)
-#
-#		while True:
-#			time.sleep(1)
-#
 #if __name__ == "__main__":
-#	daemon = MyDaemon('/var/run/phidgetlogging.pid')
-#	if len(sys.argv) == 2:
-#		if 'start' == sys.argv[1] or 'forcestart' == sys.argv[1]:
-#			daemon.start()
-#		elif 'stop' == sys.argv[1]:
-#			daemon.stop()
-#		elif 'restart' == sys.argv[1]:
-#			daemon.restart()
-#		else:
-#			print "Unknown command"
-#			sys.exit(2)
-#		sys.exit(0)
-#	else:
-#		print "usage: %s start|stop|restart" % sys.argv[0]
-#		sys.exit(2)
+	#logging.basicConfig(filename="phidgetdaemondata.log", level=logging.DEBUG)
+	#daemon = PhidgetDaemon(pidpath, "PhidgetDaemon")
+	#daemon.main()
+
+if __name__ == "__main__":
+	my_main()
