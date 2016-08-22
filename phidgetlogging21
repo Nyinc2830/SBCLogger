@@ -22,6 +22,8 @@ from Accelerometer import AttachAccelerometer
 from Stepper import AttachStepper
 from AdvancedServo import AttachAdvancedServo
 from MotorControl import AttachMotorControl
+from Bridge import AttachBridge
+from Encoder import AttachEncoder
 
 import sys, time
 from daemon import Daemon
@@ -234,6 +236,31 @@ def createDB():
 
 ##########################################################################
 
+		conn.execute('''CREATE TABLE IF NOT EXISTS BRIDGE_DATA
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		VALUE REAL);''')
+
+##########################################################################
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS ENCODER_INPUTCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		STATE INTEGER);''')
+
+		conn.execute('''CREATE TABLE IF NOT EXISTS ENCODER_POSITIONCHANGE
+		(ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		LOGTIME DATE NOT NULL,
+		SERIALNUMBER INT NOT NULL,
+		IDX INT,
+		POSITION REAL);''')
+
+##########################################################################
+
 		conn.commit()
 		conn.close()
 	except sqlite3.Error as e:
@@ -256,8 +283,8 @@ def managerDeviceAttached(event):
 	if   deviceClass ==  2:AttachAccelerometer(databasepath, event.device.getSerialNum())
 	elif deviceClass ==  3:AttachAdvancedServo(databasepath, event.device.getSerialNum())
 	elif deviceClass == 22:print("Attach Analog")
-	elif deviceClass == 23:print("Attach Bridge")
-	elif deviceClass ==  4:print("Attach Encoder")
+	elif deviceClass == 23:AttachBridge(databasepath, event.device.getSerialNum())
+	elif deviceClass ==  4:AttachEncoder(databasepath, event.device.getSerialNum())
 	elif deviceClass == 21:print("Attach FrequencyCounter")
 	elif deviceClass ==  5:print("Attach GPS")
 	elif deviceClass ==  7:AttachInterfaceKit(databasepath, event.device.getSerialNum())
