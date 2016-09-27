@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 __author__ = 'James Folk'
 __version__ = '0.0.1'
 __date__ = 'June 15 2016'
